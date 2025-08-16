@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  nginx:
+    image: nginx:latest
+    container_name: api-gateway
+    ports:
+      - '8080:80'
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - bike_service
+      - review_service
+
+  bike_service:
+    image: bike_service:latest
+    container_name: bike_service
+    depends_on:
+      - bike-service-db
+    volumes:
+      - ../bike-service/Config.toml:/app/Config.toml
+      - bike_logs:/app/logs
+    ports: []
+    environment:
+      BAL_CONFIG_FILES: /app/Config.toml
+
+  bike-service-db:
+    image: postgres:15
+    container_name: bike_service_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: bikes_db
+      POSTGRES_USER: bike_service_user
+      POSTGRES_PASSWORD: 1KiHEb8LC0VmvUe
+    volumes:
+      - bike_pgdata:/var/lib/postgresql/data
+      - ../bike-service/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports: []
+
+  review_service:
+    image: review_service:latest
+    container_name: review_service
+    depends_on:
+      - review-service-db
+    volumes:
+      - ../review_service/Config.toml:/app/Config.toml
+      - review_logs:/app/logs
+    ports: []
+    environment:
+      BAL_CONFIG_FILES: /app/Config.toml
+
+  review-service-db:
+    image: postgres:15
+    container_name: review_service_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: review_db
+      POSTGRES_USER: review_service_user
+      POSTGRES_PASSWORD: 1KiHEb8LC0VmvUe
+    volumes:
+      - review_pgdata:/var/lib/postgresql/data
+      - ../review_service/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports: []
+
+volumes:
+  bike_pgdata:
+  review_pgdata:
+  bike_logs:
+  review_logs:
